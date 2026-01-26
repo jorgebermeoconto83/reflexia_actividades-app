@@ -132,11 +132,7 @@ with st.form("reflexia_form"):
         )
 
     with col2:
-        model = st.selectbox(
-            "Modelo",
-            ["gpt-4o-mini", "gpt-4.1-mini", "gpt-4.1", "gpt-4o"],
-            index=0,
-        )
+       model = "gpt-4o-mini"
 
     objetivo_texto = st.text_area(
         "Objetivo de aprendizaje (texto)",
@@ -192,4 +188,5 @@ st.divider()
 st.caption(
     "Implementación con Responses API (recomendada para proyectos nuevos)."
 )
+
 
