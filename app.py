@@ -118,6 +118,9 @@ def run_reflexia_image(model: str, objetivo: str, image_data_url: str) -> str:
 # -----------------------
 # Form
 # -----------------------
+# ---- Selección de modo FUERA del form ----
+modo = st.radio("Entrada de actividad", ["Texto", "Imagen"], horizontal=True)
+
 with st.form("reflexia_form"):
     col1, col2 = st.columns([1, 1])
 
@@ -129,13 +132,10 @@ with st.form("reflexia_form"):
         )
 
     with col2:
-        # Modelo: por defecto uno económico y multimodal
-        # (GPT-4o mini acepta texto e imagen) :contentReference[oaicite:0]{index=0}
         model = st.selectbox(
             "Modelo",
             ["gpt-4o-mini", "gpt-4.1-mini", "gpt-4.1", "gpt-4o"],
             index=0,
-            help="Para imágenes, usa un modelo que acepte vision (p.ej., gpt-4o-mini).",
         )
 
     objetivo_texto = st.text_area(
@@ -144,19 +144,20 @@ with st.form("reflexia_form"):
         height=90,
     )
 
-    modo = st.radio("Entrada de actividad", ["Texto", "Imagen"], horizontal=True)
-
-    actividad_texto = None
-    imagen = None
-
+    # --- Entrada dinámica ---
     if modo == "Texto":
         actividad_texto = st.text_area(
             "Actividad (texto)",
-            placeholder="Pega la consigna y describe qué hace el estudiante, qué evidencia produce y qué retroalimentación recibe.",
+            placeholder="Pega la consigna y describe qué hace el estudiante.",
             height=160,
         )
+        imagen = None
     else:
-        imagen = st.file_uploader("Actividad (imagen)", type=["png", "jpg", "jpeg"])
+        imagen = st.file_uploader(
+            "Actividad (imagen)",
+            type=["png", "jpg", "jpeg"]
+        )
+        actividad_texto = None
 
     submit = st.form_submit_button("Evaluar")
 
@@ -191,3 +192,4 @@ st.divider()
 st.caption(
     "Implementación con Responses API (recomendada para proyectos nuevos)."
 )
+
