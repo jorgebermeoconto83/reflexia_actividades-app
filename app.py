@@ -1,6 +1,6 @@
 import base64
 import os
-
+import streamlit.components.v1 as components
 import requests
 import streamlit as st
 from openai import OpenAI
@@ -288,6 +288,7 @@ st.divider()
 st.caption(
     "Implementación con Responses API (recomendada para proyectos nuevos)."
 )
+
 
 
 
