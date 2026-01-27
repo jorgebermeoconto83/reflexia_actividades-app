@@ -170,13 +170,13 @@ def verify_recaptcha_v3(token: str, secret_key: str, min_score: float = 0.3) -> 
     # -----------------------
     # reCAPTCHA (anti-bots)
     # --   ---------------------
-    recaptcha_site_key = st.secrets.get("RECAPTCHA_SITE_KEY")
-    recaptcha_secret_key = st.secrets.get("RECAPTCHA_SECRET_KEY")
-
     if recaptcha_site_key and recaptcha_secret_key:
         st.session_state["recaptcha_token"] = recaptcha_token_v3(recaptcha_site_key)
     else:
         st.warning("reCAPTCHA no configurado (faltan RECAPTCHA_SITE_KEY / RECAPTCHA_SECRET_KEY en Secrets).")
+
+recaptcha_site_key = st.secrets.get("RECAPTCHA_SITE_KEY")
+recaptcha_secret_key = st.secrets.get("RECAPTCHA_SECRET_KEY")
 
 # -----------------------
 # Form
@@ -327,6 +327,7 @@ st.divider()
 st.caption(
     "Implementación con Responses API (recomendada para proyectos nuevos)."
 )
+
 
 
 
