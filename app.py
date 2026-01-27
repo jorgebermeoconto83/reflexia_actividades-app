@@ -253,20 +253,20 @@ if st.session_state.get("reflexia_ready"):
     {decision}
     """
 
-    if nuevo_nivel:
-        follow_input += f"\nNuevo nivel Bloom decidido por el docente: {nuevo_nivel}\n"
+        if nuevo_nivel:
+            follow_input += f"\nNuevo nivel Bloom decidido por el docente: {nuevo_nivel}\n"
 
-    with st.spinner("Generando siguiente paso…"):
-        try:
-            resp2 = client.responses.create(
-                model=st.session_state["reflexia_model"],
-                instructions=REFLEXIA_FOLLOWUP,
-                input=follow_input
-            )
-            st.subheader("Siguiente paso sugerido")
-            st.code(resp2.output_text, language="text")
-        except Exception as e:
-            st.error(f"Error al generar el siguiente paso: {e}")
+        with st.spinner("Generando siguiente paso…"):
+            try:
+                resp2 = client.responses.create(
+                    model=st.session_state["reflexia_model"],
+                    instructions=REFLEXIA_FOLLOWUP,
+                    input=follow_input
+                )
+                st.subheader("Siguiente paso sugerido")
+                st.code(resp2.output_text, language="text")
+            except Exception as e:
+                st.error(f"Error al generar el siguiente paso: {e}")
 
 
 
@@ -274,6 +274,7 @@ st.divider()
 st.caption(
     "Implementación con Responses API (recomendada para proyectos nuevos)."
 )
+
 
 
 
