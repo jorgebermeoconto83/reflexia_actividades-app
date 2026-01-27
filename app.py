@@ -1,12 +1,13 @@
 import base64
 import os
+import random
+import string
 
-import requests
 import streamlit as st
 from openai import OpenAI
 
-# ✅ reCAPTCHA v2 checkbox (streamlit-recaptcha)
-from streamlit_recaptcha import st_recaptcha
+from captcha.image import ImageCaptcha
+
 
 # -----------------------
 # Config UI
@@ -35,16 +36,7 @@ if not api_key:
 client = OpenAI(api_key=api_key)
 
 # -----------------------
-# reCAPTCHA v2 keys (Secrets)
-# -----------------------
-# En Streamlit Cloud → Settings → Secrets:
-# RECAPTCHA_SITE_KEY = "...."
-# RECAPTCHA_SECRET_KEY = "...."
-recaptcha_site_key = st.secrets.get("RECAPTCHA_SITE_KEY")
-recaptcha_secret_key = st.secrets.get("RECAPTCHA_SECRET_KEY")
-
-# -----------------------
-# ReflexIA v3 (con parche Bloom)
+# ReflexIA v3 (Bloom)
 # -----------------------
 REFLEXIA_V3 = r"""
 Rol
@@ -110,7 +102,7 @@ Reglas:
 """
 
 # -----------------------
-# Helpers
+# Helpers OpenAI
 # -----------------------
 def to_data_url(uploaded_file) -> str:
     raw = uploaded_file.getvalue()
@@ -143,6 +135,54 @@ def run_reflexia_image(model: str, objetivo: str, image_data_url: str) -> str:
     return resp.output_text
 
 # -----------------------
+# CAPTCHA (anti-bots) — 100% Python, funciona en Streamlit Cloud
+# -----------------------
+def _new_captcha_text(n: int = 5) -> str:
+    alphabet = string.ascii_uppercase + string.digits
+    return "".join(random.choice(alphabet) for _ in range(n))
+
+def ensure_captcha():
+    if "captcha_text" not in st.session_state:
+        st.session_state["captcha_text"] = _new_captcha_text()
+    if "captcha_ok" not in st.session_state:
+        st.session_state["captcha_ok"] = False
+
+def refresh_captcha():
+    st.session_state["captcha_text"] = _new_captcha_text()
+    st.session_state["captcha_ok"] = False
+    st.session_state["captcha_input"] = ""
+
+def captcha_block() -> bool:
+    """
+    Retorna True si está verificado. Si no, muestra UI y retorna False.
+    """
+    ensure_captcha()
+
+    st.markdown("### Anti-bots (CAPTCHA)")
+    st.caption("Escribe el código de la imagen para poder evaluar. (Puedes regenerarlo).")
+
+    img = ImageCaptcha(width=220, height=80)
+    png_bytes = img.generate(st.session_state["captcha_text"]).read()
+
+    c1, c2 = st.columns([1, 1])
+    with c1:
+        st.image(png_bytes)
+        st.button("Regenerar", on_click=refresh_captcha)
+    with c2:
+        user_in = st.text_input("Código CAPTCHA", key="captcha_input")
+        if st.button("Verificar CAPTCHA"):
+            if (user_in or "").strip().upper() == st.session_state["captcha_text"]:
+                st.session_state["captcha_ok"] = True
+                st.success("CAPTCHA verificado.")
+            else:
+                st.session_state["captcha_ok"] = False
+                st.error("CAPTCHA incorrecto. Intenta de nuevo o regenera.")
+
+    return bool(st.session_state.get("captcha_ok"))
+
+st.divider()
+
+# -----------------------
 # Form
 # -----------------------
 modo = st.radio("Entrada de actividad", ["Texto", "Imagen"], horizontal=True)
@@ -158,7 +198,9 @@ with st.form("reflexia_form"):
         )
 
     with col2:
+        # Fijo para evitar confusión (puedes reactivar selector luego si quieres)
         model = "gpt-4o-mini"
+        st.text_input("Modelo", value=model, disabled=True)
 
     objetivo_texto = st.text_area(
         "Objetivo de aprendizaje (texto)",
@@ -177,19 +219,6 @@ with st.form("reflexia_form"):
         imagen = st.file_uploader("Actividad (imagen)", type=["png", "jpg", "jpeg"])
         actividad_texto = None
 
-    # -----------------------
-    # reCAPTCHA v2 (checkbox)
-    # -----------------------
-    recaptcha_ok = True
-    if recaptcha_site_key and recaptcha_secret_key:
-        st.markdown("**Verificación anti-bots:**")
-        recaptcha_ok = st_recaptcha(
-            site_key=recaptcha_site_key,
-            secret_key=recaptcha_secret_key,
-        )
-    else:
-        st.warning("reCAPTCHA no configurado (faltan RECAPTCHA_SITE_KEY / RECAPTCHA_SECRET_KEY en Secrets).")
-
     submit = st.form_submit_button("Evaluar")
 
 if submit:
@@ -197,11 +226,9 @@ if submit:
         st.error("Falta el objetivo (texto).")
         st.stop()
 
-    # Verificación reCAPTCHA ANTES de consumir OpenAI
-    if recaptcha_site_key and recaptcha_secret_key:
-        if not recaptcha_ok:
-            st.error("Completa el reCAPTCHA para continuar.")
-            st.stop()
+    # CAPTCHA antes de consumir OpenAI
+    if not captcha_block():
+        st.stop()
 
     objetivo = f"Nivel Bloom declarado por el docente: {bloom}\nObjetivo de aprendizaje (texto): {objetivo_texto.strip()}"
 
@@ -221,7 +248,7 @@ if submit:
             st.subheader("Resultado")
             st.code(out, language="text")
 
-            # Guardar contexto
+            # Guardar contexto para decisiones posteriores
             st.session_state["reflexia_ready"] = True
             st.session_state["reflexia_result"] = out
             st.session_state["reflexia_objetivo"] = objetivo
@@ -263,6 +290,10 @@ if st.session_state.get("reflexia_ready"):
         )
 
     if st.button("Aplicar decisión"):
+        # CAPTCHA también para el follow-up (evita abuso)
+        if not captcha_block():
+            st.stop()
+
         follow_input = f"""
 Nivel Bloom declarado por el docente: {st.session_state["reflexia_bloom"]}
 
@@ -275,7 +306,6 @@ Resultado previo de ReflexIA:
 Decisión del docente:
 {decision}
 """
-
         if nuevo_nivel:
             follow_input += f"\nNuevo nivel Bloom decidido por el docente: {nuevo_nivel}\n"
 
@@ -292,4 +322,4 @@ Decisión del docente:
                 st.error(f"Error al generar el siguiente paso: {e}")
 
 st.divider()
-st.caption("Implementación con Responses API by JLBC.")
+st.caption("Implementación con Responses API (recomendada para proyectos nuevos).")
