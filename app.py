@@ -225,6 +225,7 @@ if submit:
     if not objetivo_texto.strip():
         st.error("Falta el objetivo (texto).")
         st.stop()
+    
     refresh_captcha()  # <-- AÑADE ESTA LÍNEA
     # CAPTCHA antes de consumir OpenAI
     if not captcha_block():
@@ -289,8 +290,8 @@ if st.session_state.get("reflexia_ready"):
             ),
         )
 
-    if st.button("Aplicar decisión"):
-        if st.button("Aplicar decisión"):
+if st.button("Aplicar decisión"):
+    refresh_captcha()
         # CAPTCHA también para el follow-up (evita abuso)
         if not captcha_block():
             st.stop()
@@ -324,4 +325,5 @@ Decisión del docente:
 
 st.divider()
 st.caption("Implementación con Responses API (recomendada para proyectos nuevos).")
+
 
