@@ -196,15 +196,57 @@ if submit:
 
             st.subheader("Resultado")
             st.code(out, language="text")
+# ---- Guardar contexto para decisiones posteriores ----
+            st.session_state["reflexia_ready"] = True
+            st.session_state["reflexia_result"] = out
+            st.session_state["reflexia_objetivo"] = objetivo
+            st.session_state["reflexia_bloom"] = bloom
+            st.session_state["reflexia_modo"] = modo
+            st.session_state["reflexia_model"] = model
+
 
         except Exception as e:
             st.error(f"Error al llamar a la API: {e}")
             st.stop()
 
+# -----------------------
+# Decisión del docente (UI)
+# -----------------------
+if st.session_state.get("reflexia_ready"):
+    st.subheader("Decisión del docente")
+
+    decision = st.selectbox(
+        "¿Qué quieres hacer ahora?",
+        [
+            "Elegir 2 mejoras concretas manteniendo el nivel",
+            "Pedir 3 alternativas lúdicas manteniendo el nivel",
+            "Crear una rúbrica breve (3 criterios)",
+            "Redactar retroalimentación automática (1–2 líneas)",
+            "Subir el nivel (decisión del docente)",
+            "Bajar el nivel (decisión del docente)",
+        ],
+        index=0
+    )
+
+    nuevo_nivel = None
+    if "Subir el nivel" in decision or "Bajar el nivel" in decision:
+        nuevo_nivel = st.selectbox(
+            "Nuevo nivel Bloom (decisión del docente):",
+            ["Recordar", "Comprender", "Aplicar", "Analizar", "Evaluar", "Crear"],
+            index=["Recordar","Comprender","Aplicar","Analizar","Evaluar","Crear"].index(
+                st.session_state["reflexia_bloom"]
+            ),
+        )
+
+    # Botón (aún no ejecuta IA; solo prepara el siguiente paso)
+    st.button("Aplicar decisión", key="apply_decision_placeholder")
+
+
 st.divider()
 st.caption(
     "Implementación con Responses API (recomendada para proyectos nuevos)."
 )
+
 
 
 
