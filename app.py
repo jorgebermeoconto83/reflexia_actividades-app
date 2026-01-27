@@ -228,7 +228,7 @@ if submit:
     
     refresh_captcha()  # <-- AÑADE ESTA LÍNEA
     # CAPTCHA antes de consumir OpenAI
-    if not captcha_block():
+    
         st.stop()
 
     objetivo = f"Nivel Bloom declarado por el docente: {bloom}\nObjetivo de aprendizaje (texto): {objetivo_texto.strip()}"
@@ -292,11 +292,9 @@ if st.session_state.get("reflexia_ready"):
 
 if st.button("Aplicar decisión"):
     refresh_captcha()
-        # CAPTCHA también para el follow-up (evita abuso)
-        if not captcha_block():
-            st.stop()
-
-        follow_input = f"""
+    if not captcha_block():
+        st.stop()
+    follow_input = f"""
 Nivel Bloom declarado por el docente: {st.session_state["reflexia_bloom"]}
 
 Objetivo de aprendizaje (texto):
@@ -325,5 +323,6 @@ Decisión del docente:
 
 st.divider()
 st.caption("Implementación con Responses API (recomendada para proyectos nuevos).")
+
 
 
