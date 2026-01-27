@@ -167,14 +167,18 @@ def verify_recaptcha_v3(token: str, secret_key: str, min_score: float = 0.3) -> 
     ok = bool(data.get("success"))
     score = float(data.get("score") or 0.0)
     return (ok and score >= min_score, score)
-    # -----------------------
-    # reCAPTCHA (anti-bots)
-    # --   ---------------------
-    if recaptcha_site_key and recaptcha_secret_key:
-        st.session_state["recaptcha_token"] = recaptcha_token_v3(recaptcha_site_key)
-    else:
-        st.warning("reCAPTCHA no configurado (faltan RECAPTCHA_SITE_KEY / RECAPTCHA_SECRET_KEY en Secrets).")
+# -----------------------
+# reCAPTCHA (anti-bots)
+# -----------------------
+recaptcha_site_key = st.secrets.get("RECAPTCHA_SITE_KEY")
+recaptcha_secret_key = st.secrets.get("RECAPTCHA_SECRET_KEY")
 
+st.caption("Anti-bots activo (reCAPTCHA). Si falla, recarga y espera 2–3 segundos antes de evaluar.")
+
+recaptcha_token = None
+if recaptcha_site_key and recaptcha_secret_key:
+    recaptcha_token = recaptcha_token_v3(recaptcha_site_key)
+    
 recaptcha_site_key = st.secrets.get("RECAPTCHA_SITE_KEY")
 recaptcha_secret_key = st.secrets.get("RECAPTCHA_SECRET_KEY")
 
@@ -222,14 +226,15 @@ with st.form("reflexia_form"):
 
 if submit:
     # Verificación reCAPTCHA antes de consumir la API
+    # Verificación reCAPTCHA antes de consumir la API
     if recaptcha_site_key and recaptcha_secret_key:
-        tok = st.session_state.get("recaptcha_token")
-        ok, score = verify_recaptcha_v3(tok, recaptcha_secret_key, min_score=0.3)
-        if not ok:
-            st.error(f"reCAPTCHA falló (score={score:.2f}). Recarga la página e intenta de nuevo.")
+        if not recaptcha_token:
+            st.error("reCAPTCHA aún no generó token. Recarga y espera 2–3 segundos antes de evaluar.")
             st.stop()
-    if not objetivo_texto.strip():
-        st.error("Falta el objetivo (texto).")
+
+    ok, score = verify_recaptcha_v3(recaptcha_token, recaptcha_secret_key, min_score=0.3)
+    if not ok:
+        st.error(f"reCAPTCHA falló (score={score:.2f}). Recarga y espera 2–3 segundos antes de evaluar.")
         st.stop()
 
     objetivo = f"Nivel Bloom declarado por el docente: {bloom}\nObjetivo de aprendizaje (texto): {objetivo_texto.strip()}"
@@ -327,6 +332,7 @@ st.divider()
 st.caption(
     "Implementación con Responses API (recomendada para proyectos nuevos)."
 )
+
 
 
 
