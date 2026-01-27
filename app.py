@@ -163,7 +163,9 @@ def captcha_block() -> bool:
     Retorna True si está verificado. Si no, muestra UI y retorna False.
     """
     ensure_captcha()
-
+    if st.session_state.get("captcha_ok"):
+        return True
+    
     st.markdown("### Anti-bots (CAPTCHA)")
     st.caption("Escribe el código de la imagen para poder evaluar. (Puedes regenerarlo).")
 
@@ -241,7 +243,7 @@ if submit:
         "actividad_texto": (actividad_texto.strip() if actividad_texto else None),
         "imagen": imagen,  # UploadedFile (en este rerun existe)
     }
-    refresh_captcha()  # CAPTCHA nuevo en cada evaluación
+    #refresh_captcha()  # CAPTCHA nuevo en cada evaluación
 
     if not captcha_block():
         st.stop()
@@ -352,9 +354,6 @@ if st.session_state.get("reflexia_ready"):
         )
 
     if st.button("Aplicar decisión"):
-        refresh_captcha()
-        if not captcha_block():
-            st.stop()
         follow_input = f"""
 Nivel Bloom declarado por el docente: {st.session_state["reflexia_bloom"]}
 
@@ -384,6 +383,7 @@ Decisión del docente:
 
 st.divider()
 st.caption("Implementación con Responses API (recomendada para proyectos nuevos).")
+
 
 
 
