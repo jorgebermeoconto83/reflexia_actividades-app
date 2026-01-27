@@ -1,9 +1,12 @@
 import base64
 import os
-import streamlit.components.v1 as components
+
 import requests
 import streamlit as st
 from openai import OpenAI
+
+# ✅ reCAPTCHA v2 checkbox (streamlit-recaptcha)
+from streamlit_recaptcha import st_recaptcha
 
 # -----------------------
 # Config UI
@@ -16,10 +19,8 @@ st.caption("Evalúa coherencia entre el nivel Bloom declarado y la actividad (te
 # OpenAI key (Streamlit Secrets primero)
 # -----------------------
 def get_api_key() -> str | None:
-    # Streamlit Cloud: Settings -> Secrets (recomendado)
     if "OPENAI_API_KEY" in st.secrets:
         return st.secrets["OPENAI_API_KEY"]
-    # Fallback local (solo desarrollo)
     return os.getenv("OPENAI_API_KEY")
 
 api_key = get_api_key()
@@ -32,6 +33,15 @@ if not api_key:
     st.stop()
 
 client = OpenAI(api_key=api_key)
+
+# -----------------------
+# reCAPTCHA v2 keys (Secrets)
+# -----------------------
+# En Streamlit Cloud → Settings → Secrets:
+# RECAPTCHA_SITE_KEY = "...."
+# RECAPTCHA_SECRET_KEY = "...."
+recaptcha_site_key = st.secrets.get("RECAPTCHA_SITE_KEY")
+recaptcha_secret_key = st.secrets.get("RECAPTCHA_SECRET_KEY")
 
 # -----------------------
 # ReflexIA v3 (con parche Bloom)
@@ -99,7 +109,6 @@ Reglas:
 - Si el docente pide subir/bajar nivel, entonces sí: propone cómo reestructurar la misma actividad para ese nuevo nivel.
 """
 
-
 # -----------------------
 # Helpers
 # -----------------------
@@ -133,12 +142,9 @@ def run_reflexia_image(model: str, objetivo: str, image_data_url: str) -> str:
     )
     return resp.output_text
 
-
-
 # -----------------------
 # Form
 # -----------------------
-# ---- Selección de modo FUERA del form ----
 modo = st.radio("Entrada de actividad", ["Texto", "Imagen"], horizontal=True)
 
 with st.form("reflexia_form"):
@@ -152,7 +158,7 @@ with st.form("reflexia_form"):
         )
 
     with col2:
-       model = "gpt-4o-mini"
+        model = "gpt-4o-mini"
 
     objetivo_texto = st.text_area(
         "Objetivo de aprendizaje (texto)",
@@ -160,7 +166,6 @@ with st.form("reflexia_form"):
         height=90,
     )
 
-    # --- Entrada dinámica ---
     if modo == "Texto":
         actividad_texto = st.text_area(
             "Actividad (texto)",
@@ -169,25 +174,30 @@ with st.form("reflexia_form"):
         )
         imagen = None
     else:
-        imagen = st.file_uploader(
-            "Actividad (imagen)",
-            type=["png", "jpg", "jpeg"]
-        )
+        imagen = st.file_uploader("Actividad (imagen)", type=["png", "jpg", "jpeg"])
         actividad_texto = None
+
     # -----------------------
     # reCAPTCHA v2 (checkbox)
     # -----------------------
     recaptcha_ok = True
     if recaptcha_site_key and recaptcha_secret_key:
+        st.markdown("**Verificación anti-bots:**")
         recaptcha_ok = st_recaptcha(
             site_key=recaptcha_site_key,
-            secret_key=recaptcha_secret_key
-    )
+            secret_key=recaptcha_secret_key,
+        )
+    else:
+        st.warning("reCAPTCHA no configurado (faltan RECAPTCHA_SITE_KEY / RECAPTCHA_SECRET_KEY en Secrets).")
 
     submit = st.form_submit_button("Evaluar")
 
 if submit:
-    # Verificación reCAPTCHA antes de consumir la API
+    if not objetivo_texto.strip():
+        st.error("Falta el objetivo (texto).")
+        st.stop()
+
+    # Verificación reCAPTCHA ANTES de consumir OpenAI
     if recaptcha_site_key and recaptcha_secret_key:
         if not recaptcha_ok:
             st.error("Completa el reCAPTCHA para continuar.")
@@ -210,14 +220,14 @@ if submit:
 
             st.subheader("Resultado")
             st.code(out, language="text")
-# ---- Guardar contexto para decisiones posteriores ----
+
+            # Guardar contexto
             st.session_state["reflexia_ready"] = True
             st.session_state["reflexia_result"] = out
             st.session_state["reflexia_objetivo"] = objetivo
             st.session_state["reflexia_bloom"] = bloom
             st.session_state["reflexia_modo"] = modo
             st.session_state["reflexia_model"] = model
-
 
         except Exception as e:
             st.error(f"Error al llamar a la API: {e}")
@@ -239,7 +249,7 @@ if st.session_state.get("reflexia_ready"):
             "Subir el nivel (decisión del docente)",
             "Bajar el nivel (decisión del docente)",
         ],
-        index=0
+        index=0,
     )
 
     nuevo_nivel = None
@@ -247,25 +257,24 @@ if st.session_state.get("reflexia_ready"):
         nuevo_nivel = st.selectbox(
             "Nuevo nivel Bloom (decisión del docente):",
             ["Recordar", "Comprender", "Aplicar", "Analizar", "Evaluar", "Crear"],
-            index=["Recordar","Comprender","Aplicar","Analizar","Evaluar","Crear"].index(
+            index=["Recordar", "Comprender", "Aplicar", "Analizar", "Evaluar", "Crear"].index(
                 st.session_state["reflexia_bloom"]
             ),
         )
 
-    # Botón (aún no ejecuta IA; solo prepara el siguiente paso)
     if st.button("Aplicar decisión"):
         follow_input = f"""
-    Nivel Bloom declarado por el docente: {st.session_state["reflexia_bloom"]}
-    
-    Objetivo de aprendizaje (texto):
-    {st.session_state["reflexia_objetivo"].split('Objetivo de aprendizaje (texto):',1)[-1].strip()}
-    
-    Resultado previo de ReflexIA:
-    {st.session_state["reflexia_result"]}
-    
-    Decisión del docente:
-    {decision}
-    """
+Nivel Bloom declarado por el docente: {st.session_state["reflexia_bloom"]}
+
+Objetivo de aprendizaje (texto):
+{st.session_state["reflexia_objetivo"].split('Objetivo de aprendizaje (texto):',1)[-1].strip()}
+
+Resultado previo de ReflexIA:
+{st.session_state["reflexia_result"]}
+
+Decisión del docente:
+{decision}
+"""
 
         if nuevo_nivel:
             follow_input += f"\nNuevo nivel Bloom decidido por el docente: {nuevo_nivel}\n"
@@ -275,32 +284,12 @@ if st.session_state.get("reflexia_ready"):
                 resp2 = client.responses.create(
                     model=st.session_state["reflexia_model"],
                     instructions=REFLEXIA_FOLLOWUP,
-                    input=follow_input
+                    input=follow_input,
                 )
                 st.subheader("Siguiente paso sugerido")
                 st.code(resp2.output_text, language="text")
             except Exception as e:
                 st.error(f"Error al generar el siguiente paso: {e}")
 
-
-
 st.divider()
-st.caption(
-    "Implementación con Responses API (recomendada para proyectos nuevos)."
-)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+st.caption("Implementación con Responses API by JLBC.")
