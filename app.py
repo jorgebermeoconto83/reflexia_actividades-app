@@ -134,6 +134,12 @@ def run_reflexia_image(model: str, objetivo: str, image_data_url: str) -> str:
     )
     return resp.output_text
 
+if "pending_eval" not in st.session_state:
+    st.session_state["pending_eval"] = False
+if "pending_payload" not in st.session_state:
+    st.session_state["pending_payload"] = {}
+
+
 # -----------------------
 # CAPTCHA (anti-bots) — 100% Python, funciona en Streamlit Cloud
 # -----------------------
@@ -225,7 +231,16 @@ if submit:
     if not objetivo_texto.strip():
         st.error("Falta el objetivo (texto).")
         st.stop()
-    
+    # Guardar lo que se quiere evaluar (fase A)
+    st.session_state["pending_eval"] = True
+    st.session_state["pending_payload"] = {
+        "bloom": bloom,
+        "model": model,
+        "modo": modo,
+        "objetivo_texto": objetivo_texto.strip(),
+        "actividad_texto": (actividad_texto.strip() if actividad_texto else None),
+        "imagen": imagen,  # UploadedFile (en este rerun existe)
+    }
     refresh_captcha()  # CAPTCHA nuevo en cada evaluación
 
     if not captcha_block():
@@ -260,7 +275,53 @@ if submit:
         except Exception as e:
             st.error(f"Error al llamar a la API: {e}")
             st.stop()
+#####
+if st.session_state.get("pending_eval"):
+    st.divider()
+    st.subheader("Anti-bots (CAPTCHA)")
 
+    if captcha_block():
+        if st.button("Continuar evaluación"):
+            p = st.session_state["pending_payload"]
+
+            objetivo = (
+                f"Nivel Bloom declarado por el docente: {p['bloom']}\n"
+                f"Objetivo de aprendizaje (texto): {p['objetivo_texto']}"
+            )
+
+            with st.spinner("Evaluando con ReflexIA…"):
+                try:
+                    if p["modo"] == "Texto":
+                        if not p["actividad_texto"]:
+                            st.error("Falta la actividad en texto.")
+                            st.stop()
+                        out = run_reflexia_text(p["model"], objetivo, p["actividad_texto"])
+                    else:
+                        if not p["imagen"]:
+                            st.error("No subiste ninguna imagen.")
+                            st.stop()
+                        out = run_reflexia_image(p["model"], objetivo, to_data_url(p["imagen"]))
+
+                    st.subheader("Resultado")
+                    st.code(out, language="text")
+
+                    # Guardar contexto para decisiones posteriores
+                    st.session_state["reflexia_ready"] = True
+                    st.session_state["reflexia_result"] = out
+                    st.session_state["reflexia_objetivo"] = objetivo
+                    st.session_state["reflexia_bloom"] = p["bloom"]
+                    st.session_state["reflexia_modo"] = p["modo"]
+                    st.session_state["reflexia_model"] = p["model"]
+
+                    # Limpia el pendiente
+                    st.session_state["pending_eval"] = False
+                    st.session_state["pending_payload"] = {}
+
+                except Exception as e:
+                    st.error(f"Error al llamar a la API: {e}")
+                    st.stop()
+
+#####
 # -----------------------
 # Decisión del docente (UI)
 # -----------------------
@@ -323,6 +384,7 @@ Decisión del docente:
 
 st.divider()
 st.caption("Implementación con Responses API (recomendada para proyectos nuevos).")
+
 
 
 
