@@ -240,18 +240,18 @@ if st.session_state.get("reflexia_ready"):
 
     # Botón (aún no ejecuta IA; solo prepara el siguiente paso)
     if st.button("Aplicar decisión"):
-    follow_input = f"""
-Nivel Bloom declarado por el docente: {st.session_state["reflexia_bloom"]}
-
-Objetivo de aprendizaje (texto):
-{st.session_state["reflexia_objetivo"].split('Objetivo de aprendizaje (texto):',1)[-1].strip()}
-
-Resultado previo de ReflexIA:
-{st.session_state["reflexia_result"]}
-
-Decisión del docente:
-{decision}
-"""
+        follow_input = f"""
+    Nivel Bloom declarado por el docente: {st.session_state["reflexia_bloom"]}
+    
+    Objetivo de aprendizaje (texto):
+    {st.session_state["reflexia_objetivo"].split('Objetivo de aprendizaje (texto):',1)[-1].strip()}
+    
+    Resultado previo de ReflexIA:
+    {st.session_state["reflexia_result"]}
+    
+    Decisión del docente:
+    {decision}
+    """
 
     if nuevo_nivel:
         follow_input += f"\nNuevo nivel Bloom decidido por el docente: {nuevo_nivel}\n"
@@ -274,6 +274,7 @@ st.divider()
 st.caption(
     "Implementación con Responses API (recomendada para proyectos nuevos)."
 )
+
 
 
 
