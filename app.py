@@ -5,6 +5,7 @@ import requests
 import streamlit as st
 import streamlit.components.v1 as components
 from openai import OpenAI
+from streamlit_recaptcha import st_recaptcha
 
 # -----------------------
 # Config UI
@@ -221,15 +222,23 @@ with st.form("reflexia_form"):
             type=["png", "jpg", "jpeg"]
         )
         actividad_texto = None
+    # -----------------------
+    # reCAPTCHA v2 (checkbox)
+    # -----------------------
+    recaptcha_ok = True
+    if recaptcha_site_key and recaptcha_secret_key:
+        recaptcha_ok = st_recaptcha(
+            site_key=recaptcha_site_key,
+            secret_key=recaptcha_secret_key
+    )
 
     submit = st.form_submit_button("Evaluar")
 
 if submit:
     # Verificación reCAPTCHA antes de consumir la API
-    # Verificación reCAPTCHA antes de consumir la API
     if recaptcha_site_key and recaptcha_secret_key:
-        if not recaptcha_token:
-            st.error("reCAPTCHA aún no generó token. Recarga y espera 2–3 segundos antes de evaluar.")
+        if not recaptcha_ok:
+            st.error("Completa el reCAPTCHA para continuar.")
             st.stop()
 
     ok, score = verify_recaptcha_v3(recaptcha_token, recaptcha_secret_key, min_score=0.3)
@@ -332,6 +341,7 @@ st.divider()
 st.caption(
     "Implementación con Responses API (recomendada para proyectos nuevos)."
 )
+
 
 
 
