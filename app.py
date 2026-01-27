@@ -3,7 +3,6 @@ import os
 
 import requests
 import streamlit as st
-import streamlit.components.v1 as components
 from openai import OpenAI
 from streamlit_recaptcha import st_recaptcha
 
@@ -135,53 +134,7 @@ def run_reflexia_image(model: str, objetivo: str, image_data_url: str) -> str:
     )
     return resp.output_text
 
-def recaptcha_token_v3(site_key: str) -> str | None:
-    html = f"""
-    <script src="https://www.google.com/recaptcha/api.js?render={site_key}"></script>
-    <script>
-      function sendToken(token) {{
-        const msg = {{
-          isStreamlitMessage: true,
-          type: "streamlit:setComponentValue",
-          value: token
-        }};
-        window.parent.postMessage(msg, "*");
-      }}
-      grecaptcha.ready(function() {{
-        grecaptcha.execute("{site_key}", {{action: "submit"}}).then(function(token) {{
-          sendToken(token);
-        }});
-      }});
-    </script>
-    """
-    return components.html(html, height=0)
 
-def verify_recaptcha_v3(token: str, secret_key: str, min_score: float = 0.3) -> tuple[bool, float]:
-    if not token:
-        return (False, 0.0)
-    r = requests.post(
-        "https://www.google.com/recaptcha/api/siteverify",
-        data={"secret": secret_key, "response": token},
-        timeout=10,
-    )
-    data = r.json()
-    ok = bool(data.get("success"))
-    score = float(data.get("score") or 0.0)
-    return (ok and score >= min_score, score)
-# -----------------------
-# reCAPTCHA (anti-bots)
-# -----------------------
-recaptcha_site_key = st.secrets.get("RECAPTCHA_SITE_KEY")
-recaptcha_secret_key = st.secrets.get("RECAPTCHA_SECRET_KEY")
-
-st.caption("Anti-bots activo (reCAPTCHA). Si falla, recarga y espera 2–3 segundos antes de evaluar.")
-
-recaptcha_token = None
-if recaptcha_site_key and recaptcha_secret_key:
-    recaptcha_token = recaptcha_token_v3(recaptcha_site_key)
-    
-recaptcha_site_key = st.secrets.get("RECAPTCHA_SITE_KEY")
-recaptcha_secret_key = st.secrets.get("RECAPTCHA_SECRET_KEY")
 
 # -----------------------
 # Form
@@ -240,11 +193,6 @@ if submit:
         if not recaptcha_ok:
             st.error("Completa el reCAPTCHA para continuar.")
             st.stop()
-
-    ok, score = verify_recaptcha_v3(recaptcha_token, recaptcha_secret_key, min_score=0.3)
-    if not ok:
-        st.error(f"reCAPTCHA falló (score={score:.2f}). Recarga y espera 2–3 segundos antes de evaluar.")
-        st.stop()
 
     objetivo = f"Nivel Bloom declarado por el docente: {bloom}\nObjetivo de aprendizaje (texto): {objetivo_texto.strip()}"
 
@@ -341,6 +289,7 @@ st.divider()
 st.caption(
     "Implementación con Responses API (recomendada para proyectos nuevos)."
 )
+
 
 
 
