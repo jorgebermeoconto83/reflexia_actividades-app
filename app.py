@@ -83,6 +83,23 @@ Directo, preciso, sin ambigüedades, sin textos largos.
 """
 
 # -----------------------
+# Prompt de seguimiento (decisión del docente)
+# -----------------------
+REFLEXIA_FOLLOWUP = r"""
+Eres ReflexIA. Vas a proponer un siguiente paso a partir de:
+- Nivel Bloom declarado por el docente (NO lo cambies salvo que el docente lo pida explícitamente).
+- Objetivo (texto) del docente
+- Resultado previo de evaluación
+- Decisión elegida por el docente
+
+Reglas:
+- No seas largo. Máximo 6 bullets.
+- Da opciones accionables (consignas ejemplo, criterios, retroalimentación).
+- Si el docente pide subir/bajar nivel, entonces sí: propone cómo reestructurar la misma actividad para ese nuevo nivel.
+"""
+
+
+# -----------------------
 # Helpers
 # -----------------------
 def to_data_url(uploaded_file) -> str:
@@ -188,5 +205,6 @@ st.divider()
 st.caption(
     "Implementación con Responses API (recomendada para proyectos nuevos)."
 )
+
 
 
