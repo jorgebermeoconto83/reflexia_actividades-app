@@ -4,7 +4,6 @@ import os
 import requests
 import streamlit as st
 from openai import OpenAI
-from streamlit_recaptcha import st_recaptcha
 
 # -----------------------
 # Config UI
@@ -289,6 +288,7 @@ st.divider()
 st.caption(
     "Implementación con Responses API (recomendada para proyectos nuevos)."
 )
+
 
 
 
