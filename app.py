@@ -200,7 +200,7 @@ with st.form("reflexia_form"):
 
     with col1:
         bloom = st.selectbox(
-            "Elige el nivel Bloom (obligatorio) al que deseas llegar con tu actividad",
+            "Elige el nivel bloom (obligatorio) al que deseas llegar con tu actividad",
             ["Recordar", "Comprender", "Aplicar", "Analizar", "Evaluar", "Crear"],
             index=2,
         )
@@ -383,6 +383,7 @@ Decisión del docente:
 
 st.divider()
 st.caption("© jbc.elearning - 2026")
+
 
 
 
