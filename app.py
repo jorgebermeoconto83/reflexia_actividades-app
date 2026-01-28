@@ -211,14 +211,14 @@ with st.form("reflexia_form"):
         st.text_input("Modelo", value=model, disabled=True)
 
     objetivo_texto = st.text_area(
-        "Objetivo de aprendizaje (texto)",
+        "Escribe el objetivo de aprendizaje (texto) propuesto para tu actividad",
         placeholder="Ej.: Usar el pasado simple para describir acciones de la semana pasada.",
         height=90,
     )
 
     if modo == "Texto":
         actividad_texto = st.text_area(
-            "Actividad (texto)",
+            "Escribe la consigna o intrucción de tu actividad (texto). Si elegiste al inicio del formulario imagen, procede a subir la captura de la imagen",
             placeholder="Pega la consigna y describe qué hace el estudiante.",
             height=160,
         )
@@ -383,6 +383,7 @@ Decisión del docente:
 
 st.divider()
 st.caption("© jbc.elearning - 2026")
+
 
 
 
