@@ -382,7 +382,8 @@ Decisión del docente:
                 st.error(f"Error al generar el siguiente paso: {e}")
 
 st.divider()
-st.caption("Implementación con Responses API (recomendada para proyectos nuevos).")
+st.caption("© jbc.elearning - 2026")
+
 
 
 
